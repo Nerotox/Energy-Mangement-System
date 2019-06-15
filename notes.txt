@@ -1,0 +1,3 @@
+Fragen:
+Soll es auch möglich sein Marcos Daten in die Datenbank zu speichern? Oder soll er nur laut diesen Daten etwas ein/ausschalten können in echtzeit?
+
