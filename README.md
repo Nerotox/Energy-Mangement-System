@@ -1,5 +1,5 @@
 <h1>Energy Management System</>
-<h4>by Alexander Karrer</>
+<h4>by Alexander Karrer</h4>
 
 This Energy Management System analyzes the energy consumption of your smart home and provides a nice way to look at the data.
 
