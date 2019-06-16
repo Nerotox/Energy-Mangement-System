@@ -128,8 +128,8 @@ public class Main {
 			dbCon = DriverManager.getConnection(dbUrl);
 			System.out.println("Connection established.");
 			System.out.println("Creating Table if first start...");
-			String sql = "CREATE TABLE IF NOT EXISTS Energydata(label text NOT NULL," + " value REAL NOT NULL,"
-					+ " unit text NOT NULL," + " date TEXT NOT NULL);";
+			String sql = "CREATE TABLE IF NOT EXISTS Energydata(name text NOT NULL, label text NOT NULL,"
+					+ " value REAL NOT NULL," + " unit text NOT NULL," + " date TEXT NOT NULL);";
 			Statement dbStatement = dbCon.createStatement();
 			dbStatement.execute(sql);
 
@@ -160,14 +160,7 @@ public class Main {
 					String itemResponse = itemSB.toString();
 					Gson itemGson = new GsonBuilder().setPrettyPrinting().create();
 					Item dbItem = itemGson.fromJson(itemResponse, Item.class);
-
-					// if (dbItem.label.equalsIgnoreCase("Trockner Leistung aktuell")) {
-					// System.out.println("[" +
-					// LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))
-					// + "] Name: " + dbItem.name + " Current energy: " + dbItem.state + " kWh");
-					// }
 					insert(dbItem, dbCon);
-					// insert item into db here
 				}
 				Thread.sleep(2500);
 			}
@@ -188,16 +181,17 @@ public class Main {
 		System.out.println("[" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
 				+ "] Name: " + item.label + " Current energy: " + item.state + " "
 				+ item.stateDescription.pattern.split(" ")[1]);
-		String sql = "INSERT INTO Energydata(label, value, unit, date) VALUES(?,?,?,?)";
+		String sql = "INSERT INTO Energydata(name, label, value, unit, date) VALUES(?,?,?,?,?)";
 		PreparedStatement pstmt = con.prepareStatement(sql);
-		pstmt.setString(1, item.label);
+		pstmt.setString(1, item.name);
+		pstmt.setString(2, item.label);
 		if (item.state.equalsIgnoreCase("NULL")) {
-			pstmt.setDouble(2, 0.0);
+			pstmt.setDouble(3, 0.0);
 		} else {
-			pstmt.setDouble(2, Double.parseDouble(item.state));
+			pstmt.setDouble(3, Double.parseDouble(item.state));
 		}
-		pstmt.setString(3, item.stateDescription.pattern.split(" ")[1]);
-		pstmt.setString(4, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+		pstmt.setString(4, item.stateDescription.pattern.split(" ")[1]);
+		pstmt.setString(5, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 		pstmt.executeUpdate();
 	}
 
