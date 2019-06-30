@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">EnergyManagementSystem</string>
+    <string name="title_activity_detail_view">DetailViewActivity</string>
+</resources>

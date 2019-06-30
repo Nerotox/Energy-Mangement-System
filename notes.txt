@@ -1,0 +1,6 @@
+scp EMS.jar pi@10.84.245.179:EMS/EMS.jar
+
+run as maven build
+clean install
+
+scp ../REST/EMS_REST/target/ems.war pi@10.84.245.179:apache-tomcat-9.0.21/webapps/ems.war

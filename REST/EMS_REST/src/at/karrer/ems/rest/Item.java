@@ -106,5 +106,32 @@ public class Item {
 		}
 		return Response.status(200).entity(json.toString()).build();
 	}
+	
+	@Path("all")
+	@GET
+	@Produces("application/json")
+	public Response getItems()
+			throws SQLException, ClassNotFoundException {
+		Class.forName("org.sqlite.JDBC");
+		Connection dbCon = null;
+		String dbUrl = "jdbc:sqlite:/home/pi/EMS/ems.db";
+		dbCon = DriverManager.getConnection(dbUrl);
+		PreparedStatement pstmt = dbCon
+				.prepareStatement("SELECT * from Items");
+
+		ResultSet rs = pstmt.executeQuery();
+		JSONArray json = new JSONArray();
+		ResultSetMetaData rsmd = rs.getMetaData();
+		while (rs.next()) {
+			int colCount = rsmd.getColumnCount();
+			JSONObject obj = new JSONObject();
+			for (int i = 1; i <= colCount; i++) {
+				String colName = rsmd.getColumnName(i);
+				obj.put(colName, rs.getObject(colName));
+			}
+			json.put(obj);
+		}
+		return Response.status(200).entity(json.toString()).build();
+	}
 
 }

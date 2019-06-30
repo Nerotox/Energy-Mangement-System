@@ -89,7 +89,9 @@ public class Main {
 			URL openHabURL = new URL("http://" + ip + ":" + port + "/rest/items");
 			HttpURLConnection con = (HttpURLConnection) openHabURL.openConnection();
 			con.setRequestMethod("GET");
+			
 			int status = con.getResponseCode();
+			System.out.println("request sent.");
 
 			if (status != 200) {
 				System.out.println("Something went wrong with the request. Statuscode " + status + ".");
@@ -132,13 +134,58 @@ public class Main {
 					+ " value REAL NOT NULL," + " unit text NOT NULL," + " date TEXT NOT NULL);";
 			Statement dbStatement = dbCon.createStatement();
 			dbStatement.execute(sql);
+			dbStatement.close();
+
+			sql = "CREATE TABLE IF NOT EXISTS Items(name text NOT NULL, label text NOT NULL,"
+					+ " category text NOT NULL);";
+			dbStatement = dbCon.createStatement();
+			dbStatement.execute(sql);
+			dbStatement.close();
+
+			insertItems(energyItems, dbCon);
 
 			System.out.println("Created/Found the Table.");
 
 			System.out.println("Starting to poll energy data from OpenHAB...");
 
 			// Creating the loop for getting the new data and writing it to the database.
+			long currtime = System.currentTimeMillis();
+			ArrayList<Item>[] storedItems = (ArrayList<Item>[])new ArrayList<?>[energyItems.size()];
+			for (int i = 0; i < storedItems.length; i++) {
+				storedItems[i] = new ArrayList<Item>();
+			}
+			int j = 0;
 			while (true) {
+				if (System.currentTimeMillis() - currtime > 60000) {
+					currtime = System.currentTimeMillis();
+					int i = 0;
+					int k = 0;
+					for (ArrayList<Item> it : storedItems) {
+						double avgval = 0;
+						double totalval = 0;
+						for (Item item : it) {
+							i++;
+							if (item.state.equalsIgnoreCase("NULL")) {
+								totalval += 0;
+							} else {
+								totalval += Double.parseDouble(item.state);
+							}
+							avgval = totalval / i;
+							
+							
+						}
+						totalval = 0;
+						Item avgItem = new Item();
+						avgItem = it.get(0);
+						avgItem.state = "" + avgval;
+						i = 0;
+						storedItems[k].clear();
+						k++;
+						insert(avgItem, dbCon);
+					}
+					
+				}
+
 				for (Item item : energyItems) {
 					URL itemUrl = new URL(item.link);
 					HttpURLConnection itemCon = (HttpURLConnection) itemUrl.openConnection();
@@ -160,9 +207,12 @@ public class Main {
 					String itemResponse = itemSB.toString();
 					Gson itemGson = new GsonBuilder().setPrettyPrinting().create();
 					Item dbItem = itemGson.fromJson(itemResponse, Item.class);
-					insert(dbItem, dbCon);
+					storedItems[j].add(dbItem);
+					j++;
+					// insert(dbItem, dbCon);
 				}
-				Thread.sleep(2500);
+				j = 0;
+				Thread.sleep(3000);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -173,6 +223,29 @@ public class Main {
 				}
 			} catch (SQLException e2) {
 			}
+		}
+
+	}
+
+	/**
+	 * Inserts the Energyitems into a table
+	 * 
+	 * @param energyItems
+	 * @throws SQLException
+	 */
+	private static void insertItems(List<Item> energyItems, Connection con) throws SQLException {
+		String deleteSql = "DELETE FROM Items;";
+		Statement dbStatement = con.createStatement();
+		dbStatement.execute(deleteSql);
+		dbStatement.close();
+		for (Item item : energyItems) {
+			String sql = "INSERT INTO Items(name, label, category) VALUES(?,?,?)";
+			PreparedStatement pstmt = con.prepareStatement(sql);
+			pstmt.setString(1, item.name);
+			pstmt.setString(2, item.label);
+			pstmt.setString(3, item.category);
+			pstmt.executeUpdate();
+			pstmt.close();
 		}
 
 	}
@@ -193,6 +266,7 @@ public class Main {
 		pstmt.setString(4, item.stateDescription.pattern.split(" ")[1]);
 		pstmt.setString(5, LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 		pstmt.executeUpdate();
+		pstmt.close();
 	}
 
 	private static final Pattern PATTERN = Pattern.compile("^"
